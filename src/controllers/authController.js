@@ -6,7 +6,7 @@ const crypto = require('crypto')
 
 const util = new Utilities(User)
 
-exports.register = (defaultRole = 'user') => asyncError(async (req, res, next) => {
+exports.register = asyncError(async (req, res, next) => {
     const { name, userName, email, password, phone, region, role } = req.body
 
     if (await User.findOne({ email }))
@@ -17,14 +17,14 @@ exports.register = (defaultRole = 'user') => asyncError(async (req, res, next) =
 
     const user = await User.create({
         name, email, userName, password, phone,
-        role: role || defaultRole,
+        role: role || 'user',
         region: region ?? ''
     })
 
     if (!user)
         return next(new ErrorHandler("User creation failed, try again later", 500))
 
-    util.sendCookies(res, user, 201, `${defaultRole} registered successfully`)
+    util.sendToken(res, user, 201, `${user.role} registered successfully`)
 })
 
 

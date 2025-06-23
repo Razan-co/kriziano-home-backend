@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
-      unique: true,
+      required: [true,"Prvie a phone number"],
+      unique: [true,"Phone Number has already taken."],
       validate: {
         validator: (val) => validator.isMobilePhone(val, 'en-IN'),
         message: "Enter a valid Indian mobile phone number",

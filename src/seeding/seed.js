@@ -2,7 +2,8 @@ const users = require('../others/dummy-data/dummyUsers.json')
 const User = require('../models/userModel')
 const { config } = require('dotenv')
 const connectDb = require('../config/db')
-config(); connectDb()
+config()
+connectDb()
 
 
 async function seed() {
