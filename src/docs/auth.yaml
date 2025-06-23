@@ -1,0 +1,313 @@
+paths:
+  user/auth/create:
+    post:
+      summary: Register a new user
+      tags: 
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - phone
+                - userName
+                - role
+              properties:
+                name:
+                  type: string
+                  example: Mohamed Fazil
+                email:
+                  type: string
+                  example: fazil@example.com
+                password:
+                  type: string
+                  example: strongpassword123
+                phone:
+                  type: string
+                  example: "9876543210"
+                userName:
+                  type: string
+                  example: fazilmd
+                role:
+                  type: string
+                  enum: [superadmin, admin, seller, user]
+                  example: user
+      responses:
+        201:
+          description: User created successfully
+        400:
+          description: Validation or input error
+
+  user/auth/login:
+    post:
+      summary: Log in a user and return JWT
+      tags: 
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: fazil@example.com
+                password:
+                  type: string
+                  example: strongpassword123
+      responses:
+        200:
+          description: Login successful, token returned
+        401:
+          description: Invalid credentials
+
+  /auth/logout:
+    get:
+      summary: Logout the current user
+      tags: 
+        - Authentication
+      responses:
+        200:
+          description: Logout successful
+        401:
+          description: User not logged in
+
+  /send-otp:
+    post:
+      summary: Send OTP to admin email or phone
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              oneOf:
+                - required: [email]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: fazil@example.com
+                - required: [phone]
+                  properties:
+                    phone:
+                      type: string
+                      example: "9876543210"
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OTP sent to your registered email (faz***il@example.com)
+        '400':
+          description: Failed to send OTP
+        '404':
+          description: User not found
+        '429':
+          description: Too many OTP attempts
+
+  /verify-otp:
+    post:
+      summary: Verify OTP sent to admin
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: fazil@example.com
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OTP verified successfully
+        '400':
+          description: Email and OTP are required
+        '401':
+          description: Invalid OTP
+        '410':
+          description: OTP has expired
+        '429':
+          description: Too many failed attempts
+
+  /admin/auth/register:
+    post:
+      summary: Register a new admin
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - userName
+                - phone
+                - email
+                - password
+                - role
+              properties:
+                name:
+                  type: string
+                  example: Mohamed Fazil
+                userName:
+                  type: string
+                  example: fazil_admin
+                phone:
+                  type: string
+                  example: "9876543210"
+                email:
+                  type: string
+                  format: email
+                  example: fazil@example.com
+                password:
+                  type: string
+                  format: password
+                  example: StrongPass123
+                role:
+                  type: string
+                  enum: [admin, superadmin]
+                  example: admin
+                region:
+                  type: string
+                  example: Chennai
+                profileImg:
+                  type: string
+                  example: https://cdn.com/avatar.jpg
+      responses:
+        '201':
+          description: Admin registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Admin registered successfully
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 60b8c0f8b34e2a001cf54b1a
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      role:
+                        type: string
+        '400':
+          description: Email or phone already in use
+        '500':
+          description: Server error
+
+  /admin/auth/login:
+    post:
+      summary: Login an admin user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: fazil@example.com
+                password:
+                  type: string
+                  format: password
+                  example: StrongPass123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login successful
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: 60b8c0f8b34e2a001cf54b1a
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      role:
+                        type: string
+        '400':
+          description: Missing email or password
+        '401':
+          description: Invalid Email or Password
+        '500':
+          description: Server error
+     
+
+
