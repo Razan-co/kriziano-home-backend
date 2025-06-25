@@ -15,8 +15,13 @@ const app = express()
 //   credentials: true
 // }))
 app.use(express.json())
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs))
-app.use('/api/v1/', routes)//routes
+
+//routes
+app.use('/auth',require('./src/routes/authRoute'))
+app.use('/product',require('./src/routes/productRoutes'))
+app.use('/order',require('./src/routes/orderRoute'))
+
+
 app.use(error)// error middleware
 
 app.listen(process.env.PORT, () => {
