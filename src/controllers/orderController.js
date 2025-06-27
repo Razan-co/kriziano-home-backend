@@ -5,8 +5,8 @@ const ErrorHandler = require('../utils/ErrorHandler')
 
 // -------------------- USER SIDE --------------------
 
-exports.createOrder = asyncError(async (req, res, next) => {
-  const { items, shippingInfo, paymentMethod } = req.body
+exports.createOrderOnlinePayment = asyncError(async (req, res, next) => {
+  const { items, shippingInfo, paymentMethod, paymentInfo } = req.body
   if (!items || items.length === 0) return next(new ErrorHandler('No items to order', 400))
 
   const orderItems = []
@@ -36,6 +36,7 @@ exports.createOrder = asyncError(async (req, res, next) => {
     shippingInfo,
     paymentMethod,
     totalAmount,
+    paymentInfo,
     totalPrice: totalAmount,
     orderStatus: 'Processing',
     isCancelRequested: false
@@ -129,3 +130,51 @@ exports.updateOrderStatus = asyncError(async (req, res, next) => {
   await order.save()
   res.status(200).json({ success: true, message: 'Order status updated', order })
 })
+
+
+exports.onlinePaymentOrder = asyncError(async (req, res, next) => {
+  const { items, shippingInfo } = req.body
+
+  var options = {
+    amount,
+    currency: 'INR',
+    reciept: Date.now() + '_razan_and_co'
+  }
+
+  await razorpay.create(options, function (err, order) {
+    if (!order)
+      return next(new ErrorHandler("Failde to create order", 400))
+
+    res.status(200).json({
+      success: true,
+      orderId: order.order_id,
+      order
+    })
+  })
+})
+
+
+
+exports.verifyPayment = asyncError(async (req, res, next) => {
+  const { paymentId, orderId, signature } = req.body;
+  const isValidSignature = await razorpay.utility.verifyPaymentSignature({
+    orderId,
+    paymentId,
+    signature
+  })
+  if (!isValidSignature)
+    return next(new ErrorHandler("Invalid payment signature", 400))
+
+  //create order and update payent info
+  res.json({ status: 'success', message: 'Payment verified successfully' })
+
+
+})
+
+
+exports.getRazorPAyKeyId = (req, res, next) => {
+  res.status(200).json({
+    success: true,
+    key: process.env.KEY_ID
+  })
+}

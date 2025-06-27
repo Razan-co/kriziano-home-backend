@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const orderSchema = new mongoose.Schema({
-  buyer: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user',
     required: true
@@ -15,7 +15,7 @@ const orderSchema = new mongoose.Schema({
       },
       seller: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user', // assuming seller and buyer are in same model
+        ref: 'user', // seller is also user
         required: true
       },
       quantity: {
@@ -39,15 +39,24 @@ const orderSchema = new mongoose.Schema({
     pincode: { type: String, required: true },
     country: { type: String, default: 'India' }
   },
+
   paymentMethod: {
     type: String,
     enum: ['cod', 'card', 'upi'],
     default: 'cod'
   },
+  isPaid: {
+    type: Boolean,
+    default: false
+  },
+  paidAt: {
+    type: Date
+  },
   paymentInfo: {
-    id: String, // payment gateway id (e.g., Stripe/Razorpay ID)
+    id: String,   // Razorpay/Stripe Payment ID
     status: String
   },
+
   totalAmount: {
     type: Number,
     required: true
@@ -64,30 +73,28 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'],
+    enum: ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
     default: 'Pending'
-  },
-  isCancelRequested: {
-    type: Boolean,
-    default: false
-  },
-  cancelStatus: {
-    type: String,
-    enum: ['approve', 'reject', null],
-    default: null
-  },
-  isOrderLive: {
-    type: Boolean,
-    default: true
   },
   deliveredAt: Date,
   cancelledAt: Date,
-  paymentAt: Date
+
+  cancelRequest: {
+    type: Boolean,
+    default: false
+  },
+  cancelResponse: {
+    type: String,
+    enum: ['approved', 'rejected', null],
+    default: null
+  }
+
 }, {
   timestamps: true
 })
 
-const OrderModel = mongoose.model('Order', orderSchema)
+const OrderModel = mongoose.model('order', orderSchema)
 module.exports = OrderModel

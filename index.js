@@ -2,7 +2,7 @@ const express = require('express')
 const { config } = require("dotenv")
 const cors=require('cors')
 const error = require('./src/middlewares/error')
-const routes = require('./src/routes/main')
+//const routes = require('./src/routes/main')
 const { swaggerUi, specs } = require('./src/config/swagger')
 const connectDb = require('./src/config/db')
 config()
@@ -17,9 +17,9 @@ const app = express()
 app.use(express.json())
 
 //routes
-app.use('/auth',require('./src/routes/authRoute'))
-app.use('/product',require('./src/routes/productRoutes'))
-app.use('/order',require('./src/routes/orderRoute'))
+//app.use('/auth',require('./src/routes/authRoute'))
+//app.use('/product',require('./src/routes/productRoutes'))
+//app.use('/order',require('./src/routes/orderRoute'))
 
 
 app.use(error)// error middleware

@@ -7,15 +7,14 @@ const crypto = require('crypto')
 const util = new Utilities(User)
 
 exports.register = asyncError(async (req, res, next) => {
-    const { name, userName, email, password, phone, region, role } = req.body
+    const { name, userName, email, password, phone, role } = req.body
     if (await User.findOne({ email }))
         return next(new ErrorHandler("Email is already registered", 400))
     if (await User.findOne({ userName }))
         return next(new ErrorHandler("Username is already taken", 400))
     const user = await User.create({
-        name, email, userName, password, phone,
-        role: role || 'user',
-        region: region ?? ''
+        name, email, userName, password,
+        role: role || 'user', phone
     })
     if (!user)
         return next(new ErrorHandler("User creation failed, try again later", 500))

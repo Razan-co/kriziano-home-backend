@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: [true,"Prvie a phone number"],
-      unique: [true,"Phone Number has already taken."],
+      required: [true, "Prvie a phone number"],
+      unique: [true, "Phone Number has already taken."],
       validate: {
         validator: (val) => validator.isMobilePhone(val, 'en-IN'),
         message: "Enter a valid Indian mobile phone number",
@@ -48,26 +48,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['superadmin', 'admin','user','seller'],
-      default: 'admin',
+      enum: ['superadmin', 'admin', 'user'],
+      default: 'user',
       required: true,
     },
-    region: {
-      type: {
-        type: String,
-        enum: ['Polygon'],
-        default: 'Polygon'
-      },
-      coordinates: {
-        type: [[[Number]]],
-        required: false
-      }
-    },
-
-    // OTP Security
     otp: {
       type: String,
       select: false,
+    },
+    shopName: {
+      type: String,
     },
     otpExpire: Date,
     otpAttempts: {
@@ -76,14 +66,6 @@ const userSchema = new mongoose.Schema(
     },
     otpBlockedUntil: Date,
 
-    //Franchise Linking
-    franchiseId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'franchise',
-      default: null,
-    },
-
-    // Login History
     loginHistory: [
       {
         ip: String,
@@ -94,8 +76,6 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-
-    // Password reset
     resetPasswordToken: String,
     resetPasswordTokenExpire: Date,
   },
@@ -161,13 +141,12 @@ userSchema.methods.isValidPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password)
 }
 
-
-
 //  Virtual name
 userSchema.virtual('fullName').get(function () {
   return this.name
 })
 
+module.exports = { userSchema }
 const UserModel = mongoose.model('Admin', userSchema);
 module.exports = UserModel
 
