@@ -1,0 +1,138 @@
+paths:
+  /product/:
+    get:
+      summary: Get all products
+      tags: [Public Product API]
+      responses:
+        '200':
+          description: List of products
+
+    post:
+      summary: Create a new product
+      tags: [Seller Product API]
+      requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - description
+              - price
+              - phone
+              - category
+              - stock
+              - images
+            properties:
+              name:
+                type: string
+                example: "Wooden Sofa Set"
+              description:
+                type: string
+                example: "A premium 3-seater wooden sofa with cushions"
+              price:
+                type: number
+                example: 15999.99
+              stock:
+                type: integer
+                example: 25
+              category:
+                type: string
+                example: "Furniture"
+              phone:
+                type: string
+                example: "+91-9876543210"
+              images:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - url
+                  properties:
+                    url:
+                      type: string
+                      example: "https://example.com/images/sofa1.jpg"
+      responses:
+        '201':
+          description: Product created
+
+  /product/{id}:
+    get:
+      summary: Get a single product
+      tags: [Public Product API]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+
+    put:
+      summary: Update a product
+      tags: [Seller Product API]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product updated
+
+    delete:
+      summary: Delete a product
+      tags: [Seller Product API]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted
+
+  /product/{productId}/review:
+    post:
+      summary: Add a review
+      tags: [User Product Review API]
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Review added
+
+    put:
+      summary: Update a review
+      tags: [User Product Review API]
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review updated
+
+    delete:
+      summary: Delete a review
+      tags: [User Product Review API]
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review deleted

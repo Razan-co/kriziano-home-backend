@@ -1,0 +1,138 @@
+paths:
+  /orders/:
+    post:
+      summary: Create a new order
+      tags: [User Order API]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                      quantity:
+                        type: integer
+                shippingInfo:
+                  type: object
+                  properties:
+                    fullName:
+                      type: string
+                    phone:
+                      type: string
+                    addressLine1:
+                      type: string
+                    addressLine2:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    pincode:
+                      type: string
+                    country:
+                      type: string
+                paymentMethod:
+                  type: string
+                  enum: [cod, card, upi]
+      responses:
+        '201':
+          description: Order created successfully
+
+  /orders/get-my-orders:
+    get:
+      summary: Get current user's orders
+      tags: [User Order API]
+      responses:
+        '200':
+          description: List of user's orders
+
+  /orders/cancel-request/{orderId}:
+    put:
+      summary: Request order cancellation
+      tags: [User Order API]
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancellation request sent
+
+  /orders/track/{orderId}:
+    get:
+      summary: Track a specific order
+      tags: [User Order API]
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details with tracking info
+
+  /orders/get-seller-orders:
+    get:
+      summary: Get orders for the seller
+      tags: [Seller Order API]
+      responses:
+        '200':
+          description: Seller's orders
+
+  /orders/update/{orderId}:
+    put:
+      summary: Update order status
+      tags: [Seller Order API]
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Confirmed, Shipped, Delivered, Cancelled]
+      responses:
+        '200':
+          description: Order status updated
+
+  /orders/seller/cancel/{orderId}:
+    put:
+      summary: Seller responds to a cancellation request
+      tags: [Seller Order API]
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+      responses:
+        '200':
+          description: Cancellation action completed
