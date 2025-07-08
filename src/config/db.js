@@ -3,10 +3,9 @@ const mongoose = require('mongoose')
 config()
 
 const connectDb = () => {
-    mongoose.connect(process.env.DB_LOCAL_URI).then(d => {
+    mongoose.connect(process.env.MONGO_DB_URL).then(d => {
         console.log(`Database is connected to the host : ${d.connection.host}`)
     }).catch(e => {
-        console.log("testing :", process.env.DB_LOCAL_URI)
         console.log(e.message)
     })
 }

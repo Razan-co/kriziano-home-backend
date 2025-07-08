@@ -17,9 +17,9 @@ const app = express()
 app.use(express.json())
 
 //routes
-//app.use('/auth',require('./src/routes/authRoute'))
-//app.use('/product',require('./src/routes/productRoutes'))
-//app.use('/order',require('./src/routes/orderRoute'))
+app.use('/api/auth',require('./src/routes/authRoute'))
+//app.use('/api/product',require('./src/routes/productRoutes'))
+//app.use('/api/order',require('./src/routes/orderRoute'))
 
 
 app.use(error)// error middleware

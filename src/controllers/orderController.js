@@ -5,9 +5,16 @@ const ErrorHandler = require('../utils/ErrorHandler')
 
 // -------------------- USER SIDE --------------------
 
+
+// exports.createOrder=asyncError(async (req,res,next)=>{
+//   const options={
+//     aoun
+//   }
+// })
 exports.createOrderOnlinePayment = asyncError(async (req, res, next) => {
-  const { items, shippingInfo, paymentMethod, paymentInfo } = req.body
-  if (!items || items.length === 0) return next(new ErrorHandler('No items to order', 400))
+  const { items, shippingInfo = {}, paymentMethod } = req.body
+  if (!items || items.length === 0)
+    return next(new ErrorHandler('No items to order', 400))
 
   const orderItems = []
   let totalAmount = 0
@@ -18,32 +25,48 @@ exports.createOrderOnlinePayment = asyncError(async (req, res, next) => {
     if (product.stock < item.quantity)
       return next(new ErrorHandler(`Insufficient stock for ${product.name}`, 400))
 
-    product.stock -= item.quantity
-    await product.save()
-
     totalAmount += product.price * item.quantity
+
     orderItems.push({
       product: product._id,
-      seller: product.seller,
-      quantity: item.quantity,
-      price: product.price
+      quantity: item.quantity
     })
   }
 
+  // Create Razorpay order
+  const options = {
+    amount: totalAmount * 100,
+    currency: 'INR',
+    receipt: 'order_rcptid_' + Date.now()
+  }
+
+  const razorOrder = await razorpay.orders.create(options)
+  if (!razorOrder.id) return next(new ErrorHandler('Razorpay order creation failed'))
+
+  const fullShippingInfo = {
+    ...shippingInfo,
+    fullName: req.user.name,
+    phone: req.user.phone
+  }
+
   const order = await Order.create({
-    buyer: req.user._id,
+    user: req.user._id,
     items: orderItems,
-    shippingInfo,
+    shippingInfo: fullShippingInfo,
     paymentMethod,
     totalAmount,
-    paymentInfo,
     totalPrice: totalAmount,
-    orderStatus: 'Processing',
-    isCancelRequested: false
-  })
+    paymentInfo: {
+      id: razorOrder.id,
+      status: 'created'
+    },
+    orderStatus: 'Ordered',
+    isPaid: false
+  });
 
   res.status(201).json({ success: true, order })
 })
+
 
 exports.getMyOrders = asyncError(async (req, res, next) => {
   const orders = await Order.find({ buyer: req.user._id }).populate('items.product', 'name images')

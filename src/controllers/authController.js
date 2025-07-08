@@ -1,100 +1,171 @@
 const asyncError = require('../middlewares/asyncError')
-const User = require('../models/userModel')
+const User = require('../models/main/userModel')
 const ErrorHandler = require('../utils/ErrorHandler')
 const Utilities = require('../utils/Utilities')
-const crypto = require('crypto')
+const util = new Utilities()
 
-const util = new Utilities(User)
-
-exports.register = asyncError(async (req, res, next) => {
-    const { name, userName, email, password, phone, role } = req.body
-    if (await User.findOne({ email }))
-        return next(new ErrorHandler("Email is already registered", 400))
-    if (await User.findOne({ userName }))
-        return next(new ErrorHandler("Username is already taken", 400))
+//----- Create user (post)  - /auth/create
+exports.createUser = asyncError(async (req, res, next) => {
+    const { name, userName, email, password, phone } = req.body
+    const userExist = await User.findOne({ $or: [{ email }, { phone }] })
+    if (userExist)
+        return next(new ErrorHandler("User already exists email or phone", 401))
     const user = await User.create({
-        name, email, userName, password,
-        role: role || 'user', phone
+        name, email,
+        userName, password, phone,
+        role: req.body.role || 'user'
     })
     if (!user)
-        return next(new ErrorHandler("User creation failed, try again later", 500))
-    util.sendToken(res, user, 201, `${user.role} registered successfully`)
+        return next(new ErrorHandler("User cretion failed, try again later", 401))
+    util.sendToken(res, user)
 })
 
 
+//------Login user (post)  - /auth/login/:method= phone or email
 exports.login = asyncError(async (req, res, next) => {
-    const { email, password } = req.body
-    if (!email || !password)
-        return next(new ErrorHandler("Email and password are required", 400))
+    const { password } = req.body || {}
+    const { method } = req.params
 
-    const user = await User.findOne({ email }).select('+password')
-    if (!user || !(await user.isValidPassword(password)))
-        return next(new ErrorHandler("Invalid Email or Password", 401))
+    const condition = await util.loginConditions(req, next)
 
-    user.loginHistory.push({ ip: req.ip, device: req.headers['user-agent'] })
-    await user.save()
+    if (!condition)
+        return next(new ErrorHandler("Invalid login method, phone or email is required to Login", 400))
 
-    util.sendCookies(res, user, 200, "Login successful")
+    const user = await User.findOne(condition).select("+password")
+    console.log(password)
+    if (!user)
+        return next(new ErrorHandler(
+            method === 'email' ?
+                "Invalid Email or Password" :
+                'Invalid phone number or password',
+            401))
+
+    if (!await user.isValidPassword(password))
+        return next(new ErrorHandler(
+            method === 'email' ?
+                "Invalid Email or Password" :
+                "Invalid Phone number or password",
+            401))
+
+    util.sendToken(res, user)
 })
 
+//------Send OTP  (post)   - /auth/send-otp/:method= phone or email
+exports.sendOtp = asyncError(async (req, res, next) => {
+    const { email, phone } = req.body
+    const { method } = req.params
 
-exports.updateUser = asyncError(async (req, res, next) => {
-    const updates = req.body
-    const userId = req.user.id
-    const disallowedFields = ['email', 'phone', 'password']
-    disallowedFields.forEach(f => delete updates[f])
+    const condition = await util.loginConditions(req, next)
 
-    if (updates.userName) {
-        const existing = await User.findOne({ userName: updates.userName, _id: { $ne: userId } })
-        if (existing) return next(new ErrorHandler("Username is already taken", 400))
-    }
+    if (!condition)
+        return next(new ErrorHandler("Invalid login method, phone or email is required to Login", 400))
 
-    const user = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true })
-    if (!user) return next(new ErrorHandler("User not found", 404))
-
-    res.status(200).json({ success: true, message: "User updated successfully", user })
-})
-
-
-exports.forgotPassword = asyncError(async (req, res, next) => {
-    const { email } = req.body
-    const user = await User.findOne({ email })
-    if (!user) return next(new ErrorHandler("User not found", 404))
-
-    const resetToken = crypto.randomBytes(32).toString("hex")
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex")
-    user.resetPasswordToken = hashedToken
-    user.resetPasswordTokenExpire = Date.now() + 15 * 60 * 1000
-    await user.save()
-
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
-    const isSent = await util.sendOtpMail(email, null, resetUrl)
-    if (!isSent) return next(new ErrorHandler("Failed to send reset link", 500))
-
-    res.status(200).json({
-        success: true,
-        message: `Password reset link sent to ${email}`
-    })
-})
-
-
-exports.resetPassword = asyncError(async (req, res, next) => {
-    const { token } = req.params
-    const { password } = req.body
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
-
-    const user = await User.findOne({
-        resetPasswordToken: hashedToken,
-        resetPasswordTokenExpire: { $gt: Date.now() }
-    }).select('+password')
+    const user = await User.findOne(condition).select("+otp +otpExpire +otpAttempts +otpBlockedUntil")
 
     if (!user)
-        return next(new ErrorHandler("Reset token is invalid or expired", 400))
+        return next(new ErrorHandler(
+            method === 'email' ?
+                "No user found with the provided Email" :
+                "No user found with this provided Phone",
+            401
+        ))
+
+    util.sendOtp(user, res, next)
+
+})
+
+
+//-----Verify otp  (post)  -/auth/verify-otp/:method= phone or email
+exports.verifyOtp = asyncError(async (req, res, next) => {
+    const { email, phone, otp } = req.body
+    const { method } = req.params
+
+    const condition = util.loginConditions(req, next)
+
+    if (!condition && !otp)
+        return next(new ErrorHandler(
+            method === 'email' ?
+                "Email and otp both are required" :
+                "Phone and otp both are required", 404))
+
+    const user = await User.findOne({ $and: [condition, { otp }] }).select("+otp +otpExpire +otpAttempts +otpBlockedUntil")
+
+    if (!user) return next(new ErrorHandler("User or Otp is invlaid for that you provided"))
+
+    util.verifyOtp(user, otp, next, res)
+})
+
+
+//------change password (patch) -/auth/change-password
+exports.changePassword = asyncError(async (req, res, next) => {
+    const { user: loggedUser } = req
+    const { password, currentPassword } = req.body
+
+    const user = await User.findById(loggedUser._id.toString()).select("+password")
+    if (!user) return next(new ErrorHandler("user not found", 404))
+
+    if (!await user.isValidPassword(currentPassword))
+        return next(new ErrorHandler("Invalid password !, Try again later.", 401))
 
     user.password = password
+    await user.save()
+
+    res.status(202).json({
+        success: true,
+        message: "Your password has been changed"
+    })
+})
+
+
+//------ forgot paassword (post) -/auth/forgot-password
+exports.forgotPassword = asyncError(async (req, res, next) => {
+    const { email } = req.body
+
+    const user = await User.findOne({ email })
+
+    if (!user) return next(new ErrorHandler("User not found", 401))
+
+    const { resetPasswordToken, resetPasswordTokenExpire, token } = util.getResetPasswordToken()
+
+    user.resetPasswordToken = resetPasswordToken
+    user.resetPasswordTokenExpire = resetPasswordTokenExpire
+    await user.save()
+
+    const resetUrl = `http://host/reet-password/${token}`
+
+    const options = {
+        email: user.email,
+        subject: "Password reset URL",
+        message: `Your password reset URL is ${resetUrl}`
+    }
+
+    const isSent = await util.sendMail(options)
+
+    if (!isSent) return next(new ErrorHandler("Reset url has failed to send via Email"))
+    res.status(201).json({
+        success: true,
+        message: `Reset sent to your registerd email ${util.maskedMail(user)}`
+    })
+
+})
+
+
+
+//------Reset Password   (post)  -/auth/reset-password
+exports.resetPassword = asyncError(async (req, res, next) => {
+    const { newPassword } = req.body
+    const resetPasswordToken = util.getResetPasswordToken(req.params.resetToken)
+
+    const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordTokenExpire: { $gt: Date.now() }
+    }).select("+password")
+    if (!user) return next(new ErrorHandler("Invlaid token or expired", 400))
+
+    user.password = newPassword
     user.resetPasswordToken = undefined
     user.resetPasswordTokenExpire = undefined
     await user.save()
 
-    util.sendCookies(res, user, 200, "Password reset successful")
+    util.sendToken(res,user)
 })
