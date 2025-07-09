@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
-const {addressSchema} = require('../sub-model/addressModel')
+const { addressSchema } = require('../sub-model/addressModel')
+const paymentInfoSchema = require('../sub-model/paymentInfoSchema')
 
 const orderSchema = new mongoose.Schema({
   user: {
@@ -24,9 +25,9 @@ const orderSchema = new mongoose.Schema({
   shippingInfo: {
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
-    address:{
-        type:mongoose.Types.ObjectId,
-        required:[true,"Please provid address ID to make orders"]
+    address: {
+      type: mongoose.Types.ObjectId,
+      required: [true, "Please provid address ID to make orders"]
     }
   },
 
@@ -42,14 +43,7 @@ const orderSchema = new mongoose.Schema({
   paidAt: {
     type: Date
   },
- paymentInfo: {
-  id: String,// Razorpay/Stripe Payment ID
-  status: String,
-  method: String,
-  amount: Number,
-  currency: String,
-  provider: String
-},
+  paymentInfo: paymentInfoSchema,
   taxPrice: {
     type: Number,
     default: 0
@@ -65,7 +59,7 @@ const orderSchema = new mongoose.Schema({
 
   orderStatus: {
     type: String,
-    enum: ['Ordered','Processing', 'Shipped', 'Delivered', 'Cancelled'],
+    enum: ['Ordered', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
     default: 'Ordered'
   },
   deliveredAt: Date,
